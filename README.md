@@ -45,6 +45,15 @@ you whether it is still plugged into some machine.
 
 ---
 
+## Commands
+
+The plugin ships two slash commands:
+
+| Command | Does |
+|---|---|
+| `/daily` | Your day in one call: due today, overdue, estimated time |
+| `/tasks #project` | Tasks, optionally for one project. Also takes `atrasadas`, `sem dono`, `de ana` |
+
 ## Tools
 
 **Read**
@@ -58,6 +67,7 @@ you whether it is still plugged into some machine.
 | `systemtask_team_load` | Workload per person and **who has nothing assigned** |
 | `systemtask_team_list` | Who is on the project |
 | `systemtask_tasks_search` | Search by project, assignee, status, period |
+| `systemtask_task_get` | One task in full — the escape hatch when a title is truncated |
 | `systemtask_whoami` | Which account the token opens |
 
 **Write**

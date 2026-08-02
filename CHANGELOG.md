@@ -1,5 +1,18 @@
 # Changelog — system-task-mcp
 
+## 1.1.0
+
+- **`/daily` e `/tasks`** — dois comandos que vêm com o plugin, para todo mundo que instalar.
+  `/daily` responde o dia numa chamada só (`day_brief`, já somado no servidor). `/tasks` aceita
+  `#projeto` e palavras de filtro ("atrasadas", "sem dono", "de ana"), e escolhe entre buscar
+  linhas ou pedir os números do relatório conforme a pergunta.
+- 🐛 **`systemtask_task_get` — a saída que faltava para o título cortado.** As tabelas cortam o
+  título em ~45 caracteres de propósito (é o que mantém o custo de contexto baixo), mas não havia
+  NENHUMA forma de ler o texto inteiro depois: economia que perde informação de vez não é
+  economia. Agora devolve título e descrição sem corte, mais as subtarefas. Exigiu a rota
+  `GET /api/tasks/:id` na API, liberada na allow-list do token.
+- 15 tools no total.
+
 ## 1.0.1
 
 - **The configure panel now asks for ONE thing: the token.** `apiUrl` was a user option with a

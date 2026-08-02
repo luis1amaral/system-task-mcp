@@ -90,7 +90,7 @@ notify('notifications/initialized');
 
 const listed = await call('tools/list', {});
 const tools = listed.result?.tools ?? [];
-ok(tools.length === 14, `lists 14 tools (got ${tools.length})`);
+ok(tools.length === 15, `lists 15 tools (got ${tools.length})`);
 
 for (const t of tools) {
   ok(t.name.startsWith('systemtask_'), `${t.name}: product prefix`);
@@ -104,6 +104,8 @@ for (const required of [
   'systemtask_project_report',
   'systemtask_team_load',
   'systemtask_demand_create',
+  // The escape hatch for the truncated titles in every table.
+  'systemtask_task_get',
 ]) {
   ok(names.includes(required), `has ${required}`);
 }

@@ -215,3 +215,30 @@ export const taskComment: ToolDef = {
     return `Comentário registrado na tarefa **#${a.task}**.`;
   },
 };
+
+export const taskGet: ToolDef = {
+  name: 'systemtask_task_get',
+  title: 'Ler uma tarefa inteira',
+  description:
+    'A tarefa COMPLETA: título e descrição sem corte, mais as subtarefas. Use sempre que o título ' +
+    'aparecer cortado com "…" nas listas e você precisar do texto inteiro — as tabelas cortam de ' +
+    'propósito para caber, esta tool é a saída.',
+  inputSchema: { task: z.number().int().min(1).describe('O id da tarefa (o número que aparece como #123).') },
+  readOnly: true,
+  async run({ api }, a) {
+    const r = await api.get<{ task: any; steps: any[] }>(`/api/tasks/${a.task}`);
+    const t = r.task;
+    const parts = [
+      `## #${t.id} — ${t.title}`,
+      `${t.completed ? '✓ concluída' : 'aberta'} · vence ${fmtDate(t.date)}${t.time ? ` às ${t.time}` : ''}` +
+        `${t.priority ? ` · prioridade ${t.priority}` : ''}${t.durationMin ? ` · ${fmtMin(t.durationMin)}` : ''}`,
+    ];
+    if (t.description) parts.push('', t.description);
+    if (r.steps?.length) {
+      parts.push('', '**Subtarefas**');
+      for (const s of r.steps) parts.push(`- [${s.completed ? 'x' : ' '}] ${s.description}`);
+    }
+    if (t.tags?.length) parts.push('', `Etiquetas: ${t.tags.join(', ')}`);
+    return parts.join('\n');
+  },
+};

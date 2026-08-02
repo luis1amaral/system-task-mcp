@@ -10,7 +10,7 @@ import {
   teamLoad,
   whoami,
 } from './tools/reports.js';
-import { taskAssign, taskComment, taskCreate, taskMove, taskUpdate, tasksSearch } from './tools/tasks.js';
+import { taskAssign, taskComment, taskCreate, taskGet, taskMove, taskUpdate, tasksSearch } from './tools/tasks.js';
 import { demandCreate } from './tools/demand.js';
 
 export const TOOLS: ToolDef[] = [
@@ -22,6 +22,7 @@ export const TOOLS: ToolDef[] = [
   teamLoad,
   teamList,
   tasksSearch,
+  taskGet,
   whoami,
   // write
   demandCreate,
