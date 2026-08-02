@@ -1,0 +1,7 @@
+node_modules/
+*.log
+.env
+.DS_Store
+
+# `dist/` NÃO entra aqui: a instalação do plugin copia a pasta e não roda `npm install`,
+# então o JavaScript compilado precisa estar versionado.

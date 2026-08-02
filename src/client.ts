@@ -1,0 +1,181 @@
+/**
+ * The only file that knows HTTP exists. No tool reads `process.env` or builds a URL — they receive
+ * this object ready. That is what lets the same tools run over stdio today and inside a Worker
+ * tomorrow (a new entry point building the client from a header) without touching any tool.
+ */
+
+export const DEFAULT_API_URL = 'https://system-api.defaltm.com';
+
+/** Carries a user-ready message — never the raw body, never the token. */
+export class ApiError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
+export interface Category {
+  id: number;
+  name: string;
+  viewMode?: string;
+}
+
+export interface Member {
+  userId: number;
+  username: string;
+  displayName?: string | null;
+  role?: string;
+}
+
+export interface Task {
+  id: number;
+  title: string;
+  description: string | null;
+  date: string | null;
+  time: string | null;
+  priority: string | null;
+  categoryId: number | null;
+  assigneeUserId: number | null;
+  durationMin: number | null;
+  completed: boolean;
+}
+
+export class SystemTaskClient {
+  private categoriesCache: Category[] | null = null;
+  private membersCache = new Map<number, Member[]>();
+
+  constructor(
+    private readonly baseUrl: string,
+    private readonly token: string,
+  ) {}
+
+  async request<T = any>(method: string, path: string, body?: unknown): Promise<T> {
+    let res: Response;
+    try {
+      res = await fetch(this.baseUrl + path, {
+        method,
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        },
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+      });
+    } catch {
+      throw new ApiError(0, `não consegui falar com o System Task em ${this.baseUrl} — verifique a conexão`);
+    }
+
+    const text = await res.text();
+    const data = text ? safeJson(text) : {};
+
+    if (!res.ok) throw new ApiError(res.status, messageFor(res.status, data));
+    return data as T;
+  }
+
+  get<T = any>(path: string) {
+    return this.request<T>('GET', path);
+  }
+  post<T = any>(path: string, body: unknown) {
+    return this.request<T>('POST', path, body);
+  }
+  patch<T = any>(path: string, body: unknown) {
+    return this.request<T>('PATCH', path, body);
+  }
+
+  // Name resolution. People say "in the Vendas project", never "in category 17" — resolving names
+  // here (once per process) is what makes the tools usable in a conversation.
+
+  async categories(): Promise<Category[]> {
+    if (!this.categoriesCache) {
+      const r = await this.get<{ categories: Category[] }>('/api/categories');
+      this.categoriesCache = r.categories ?? [];
+    }
+    return this.categoriesCache;
+  }
+
+  /** Takes an id or a name. An ambiguous name returns the options rather than guessing. */
+  async resolveProject(ref: string | number): Promise<Category> {
+    const all = await this.categories();
+    if (all.length === 0) throw new ApiError(404, 'você ainda não tem nenhum projeto no System Task');
+
+    const asId = typeof ref === 'number' ? ref : /^\d+$/.test(ref.trim()) ? Number(ref) : null;
+    if (asId != null) {
+      const found = all.find((c) => c.id === asId);
+      if (found) return found;
+      throw new ApiError(404, `projeto ${asId} não existe ou você não participa dele`);
+    }
+
+    const target = String(ref).trim().toLowerCase();
+    const exact = all.filter((c) => c.name.toLowerCase() === target);
+    const candidates = exact.length > 0 ? exact : all.filter((c) => c.name.toLowerCase().includes(target));
+
+    if (candidates.length === 1) return candidates[0];
+    if (candidates.length === 0) {
+      throw new ApiError(404, `não achei o projeto "${ref}". Os seus são: ${all.map((c) => c.name).join(', ')}`);
+    }
+    throw new ApiError(
+      409,
+      `"${ref}" combina com mais de um projeto: ${candidates.map((c) => `${c.name} (#${c.id})`).join(', ')}. Diga qual.`,
+    );
+  }
+
+  async members(categoryId: number): Promise<Member[]> {
+    const cache = this.membersCache.get(categoryId);
+    if (cache) return cache;
+    const r = await this.get<{ members: Member[] }>(`/api/categories/${categoryId}/members`);
+    const all = r.members ?? [];
+    this.membersCache.set(categoryId, all);
+    return all;
+  }
+
+  /** Username, display name or id → a member of that list. */
+  async resolveMember(categoryId: number, ref: string | number): Promise<Member> {
+    const all = await this.members(categoryId);
+    const asId = typeof ref === 'number' ? ref : /^\d+$/.test(String(ref).trim()) ? Number(ref) : null;
+    if (asId != null) {
+      const found = all.find((m) => m.userId === asId);
+      if (found) return found;
+      throw new ApiError(400, `a pessoa ${asId} não participa deste projeto`);
+    }
+    const target = String(ref).trim().replace(/^@/, '').toLowerCase();
+    const candidates = all.filter(
+      (m) => m.username.toLowerCase() === target || (m.displayName ?? '').toLowerCase() === target,
+    );
+    const partial = candidates.length > 0 ? candidates : all.filter((m) => m.username.toLowerCase().startsWith(target));
+    if (partial.length === 1) return partial[0];
+    if (partial.length === 0) {
+      throw new ApiError(
+        400,
+        `"${ref}" não participa deste projeto. Quem participa: ${all.map((m) => m.username).join(', ')}`,
+      );
+    }
+    throw new ApiError(409, `"${ref}" combina com: ${partial.map((m) => m.username).join(', ')}. Diga qual.`);
+  }
+}
+
+function safeJson(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Turns the status into something actionable. The 401 matters most: a revoked token failing with
+ * "Unauthorized" sends the user debugging the network instead of opening the app.
+ */
+function messageFor(status: number, data: any): string {
+  const fromApi = typeof data?.error === 'string' ? data.error : '';
+  if (status === 401) {
+    return 'o token de acesso é inválido, foi revogado ou expirou — gere outro no app, em Configurações → Acesso de agentes';
+  }
+  if (status === 403) {
+    return 'o token de agente não tem permissão para isto (ele só lê relatórios e cria/edita tarefas — apagar e mexer na conta é pelo app)';
+  }
+  if (status === 404) return fromApi || 'não encontrado (ou você não participa desta all)';
+  if (status === 429) return 'muitas requisições seguidas — espere um pouco';
+  return fromApi || `a API respondeu ${status}`;
+}

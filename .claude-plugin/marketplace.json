@@ -1,0 +1,17 @@
+{
+  "name": "system-task",
+  "owner": {
+    "name": "System Task",
+    "url": "https://system-task.defaltm.com"
+  },
+  "description": "Official System Task plugin for Claude Code.",
+  "plugins": [
+    {
+      "name": "system-task",
+      "source": "./",
+      "description": "Project reports, team workload and demand creation in System Task.",
+      "category": "productivity",
+      "tags": ["tasks", "projects", "project-management", "team"]
+    }
+  ]
+}
