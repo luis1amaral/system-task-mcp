@@ -18,7 +18,7 @@ In Claude Code:
 ```
 
 ```
-/plugin install system-task@system-task
+/plugin install system-task
 ```
 
 Claude will ask for an **access token**. Generate one in the System Task app under
