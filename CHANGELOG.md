@@ -2,6 +2,13 @@
 
 ## 1.2.0
 
+- ✨ **`task_create` aceita `assignee`.** Antes a tool era "cria uma tarefa SUA, sem responsável" e
+  mandava usar `demand_create` para qualquer coisa de outra pessoa — só que demanda exige objetivo,
+  entrega e critério de pronto, e nem todo trabalho atribuído é uma demanda formal. Pôr alguém como
+  responsável virava dois passos (criar e depois `task_assign`). O nome é resolvido dentro do
+  projeto ANTES de criar: um username errado agora falha sem deixar tarefa órfã para trás. Sem
+  `project`, a tool explica que precisa dele em vez de ignorar o campo calado.
+
 - 🐛 **A hora da tarefa era escrita-cega.** A API sempre teve `time` (`HH:MM`, aceito no
   `POST /api/tasks` e no `PATCH /api/tasks/:id`) e o `task_get` já imprimia "às HH:MM" — mas
   `task_create`, `task_update` e `demand_create` nunca mandavam o campo, e nem o expunham no

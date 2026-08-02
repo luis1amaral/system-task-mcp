@@ -73,13 +73,18 @@ export const tasksSearch = {
 };
 export const taskCreate = {
     name: 'systemtask_task_create',
-    title: 'Criar uma tarefa simples (sua)',
-    description: 'Cria uma tarefa SUA, sem responsável — um lembrete, uma anotação, algo que você mesmo vai ' +
-        'fazer. Para trabalho que vai para OUTRA PESSOA, use systemtask_demand_create: demanda precisa ' +
-        'de objetivo, entrega e critério de pronto, e esta tool não registra nada disso.',
+    title: 'Criar uma tarefa (sua ou de alguém)',
+    description: 'Cria uma tarefa — sua, ou já no nome de alguém do projeto (assignee). Uma tarefa tem UM ' +
+        'responsável ou nenhum. Para uma DEMANDA de verdade, com objetivo, entrega e critério de pronto ' +
+        'registrados, use systemtask_demand_create: esta tool não guarda nada disso.',
     inputSchema: {
         title: z.string().min(1).max(200).describe('O que é, em uma linha.'),
         project: z.string().optional().describe('Nome ou id do projeto. Sem isto, a tarefa fica solta.'),
+        assignee: z
+            .string()
+            .optional()
+            .describe('Nome de usuário ou id de quem assume. Exige "project" — é dentro dele que o nome é ' +
+            'resolvido. Sem isto, a tarefa nasce sem responsável.'),
         due: vDate.optional().describe('Quando vence, YYYY-MM-DD. Sem data, vira backlog.'),
         time: vTime
             .optional()
@@ -99,14 +104,27 @@ export const taskCreate = {
             description: a.description ?? null,
         };
         let where = 'sem projeto';
+        let categoryId = null;
         if (a.project) {
             const p = await api.resolveProject(a.project);
             body.categoryId = p.id;
+            categoryId = p.id;
             where = p.name;
+        }
+        // Resolved BEFORE creating: a bad username would otherwise leave an orphan task behind and
+        // report a failure, which reads as "nothing happened".
+        let owner = '';
+        if (a.assignee) {
+            if (categoryId == null) {
+                return 'Para dizer de quem é a tarefa eu preciso do projeto — o nome de usuário é resolvido dentro dele. Informe "project".';
+            }
+            const m = await api.resolveMember(categoryId, a.assignee);
+            body.assigneeUserId = m.userId;
+            owner = `, de @${m.username}`;
         }
         const r = await api.post('/api/tasks', body);
         const when = a.due ? `, vence ${fmtDate(a.due)}${a.time ? ` às ${a.time}` : ''}` : ', sem data';
-        return `Criada a tarefa **#${r.task.id}** — "${r.task.title}" (${where}${when}).`;
+        return `Criada a tarefa **#${r.task.id}** — "${r.task.title}" (${where}${when}${owner}).`;
     },
 };
 export const taskUpdate = {
