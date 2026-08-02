@@ -1,7 +1,7 @@
 ---
-name: tasks
+name: system-task
 description: >
-  List System Task tasks, optionally for one project. Use when the user runs /tasks, says
+  List System Task tasks, optionally for one project. Use when the user runs /system-task, says
   "mostra as tarefas", "o que tem no projeto X", "#projeto", or wants to see or filter tasks.
 argument-hint: "[#projeto] [atrasadas|abertas|concluidas|sem-dono]"
 allowed-tools: mcp__system-task__systemtask_tasks_search, mcp__system-task__systemtask_projects_list, mcp__system-task__systemtask_project_report, mcp__system-task__systemtask_project_risks, mcp__system-task__systemtask_task_get

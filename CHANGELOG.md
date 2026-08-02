@@ -1,5 +1,11 @@
 # Changelog — system-task-mcp
 
+## 1.1.1
+
+- 🐛 **`/tasks` virou `/system-task`.** `/tasks` já é um comando EMBUTIDO do Claude Code (lista o
+  trabalho em segundo plano da sessão) — um plugin não pode tomar esse nome. `/daily` continua,
+  esse não colide com nada.
+
 ## 1.1.0
 
 - **`/daily` e `/tasks`** — dois comandos que vêm com o plugin, para todo mundo que instalar.

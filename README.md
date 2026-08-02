@@ -52,7 +52,7 @@ The plugin ships two slash commands:
 | Command | Does |
 |---|---|
 | `/daily` | Your day in one call: due today, overdue, estimated time |
-| `/tasks #project` | Tasks, optionally for one project. Also takes `atrasadas`, `sem dono`, `de ana` |
+| `/system-task #project` | Tasks, optionally for one project. Also takes `atrasadas`, `sem dono`, `de ana` |
 
 ## Tools
 
