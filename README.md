@@ -21,8 +21,13 @@ In Claude Code:
 /plugin install system-task
 ```
 
-On the second command Claude asks for one thing — your **access token**. Generate it in the
-System Task app under **Settings → Agent access**, tap *Connect Claude Code*, and paste it. The token is stored in your
+```
+/plugin configure system-task
+```
+
+The third command asks for one thing — your **access token**. Generate it in the System Task app
+under **Settings → Agent access**, tap *Connect Claude Code*, and paste it. (`install` prompts too
+when the token is missing; `configure` always does, and is also how you replace it later.) The token is stored in your
 system keychain — never in a project file, never in your shell history.
 
 Don't have an account yet? Create one at **[system-task.defaltm.com](https://system-task.defaltm.com)**.
