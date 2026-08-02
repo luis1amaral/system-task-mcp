@@ -1,6 +1,6 @@
 {
   "name": "system-task-mcp",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Servidor MCP do System Task: relatórios de projeto, carga da equipe e criação de demandas.",
   "type": "module",
   "license": "MIT",

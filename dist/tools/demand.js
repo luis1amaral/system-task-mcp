@@ -35,6 +35,11 @@ export const demandCreate = {
             .describe('Critério MENSURÁVEL de conclusão, verificável por outra pessoa sem perguntar nada.'),
         assignee: z.string().optional().describe('Nome de usuário ou id de quem assume. Sem isto, a demanda nasce sem dono.'),
         due: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe('Quando vence, YYYY-MM-DD.'),
+        time: z
+            .string()
+            .regex(/^\d{2}:\d{2}$/)
+            .optional()
+            .describe('Hora do dia, HH:MM em 24h. Só faz sentido junto com "due".'),
         priority: z.enum(['low', 'med', 'high']).optional(),
         estimateMin: z.number().int().min(0).max(1440).optional().describe('Estimativa em minutos.'),
         context: z.string().max(800).optional().describe('Por que isto existe / de onde veio. Opcional.'),
@@ -65,6 +70,7 @@ export const demandCreate = {
             description: description.slice(0, 2000),
             categoryId: project.id,
             date: a.due ?? null,
+            time: a.time ?? null,
             priority: a.priority ?? null,
             durationMin: a.estimateMin ?? null,
             assigneeUserId,
@@ -82,7 +88,7 @@ export const demandCreate = {
             `- Entrega: ${a.deliverable}`,
             `- Pronto quando: ${a.doneWhen}`,
             `- Responsável: ${who}`,
-            `- Prazo: ${a.due ? fmtDate(a.due) : 'sem data'}${a.priority ? ` · prioridade ${a.priority}` : ''}`,
+            `- Prazo: ${a.due ? `${fmtDate(a.due)}${a.time ? ` às ${a.time}` : ''}` : 'sem data'}${a.priority ? ` · prioridade ${a.priority}` : ''}`,
             ...(steps > 0 ? [`- ${steps} subtarefa(s) criadas`] : []),
         ].join('\n');
     },

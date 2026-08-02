@@ -1,7 +1,7 @@
 // Read-only tools. They all return aggregated NUMBERS, not task rows — the API sums in SQL, which
 // is why a quarter's report fits in half a screen instead of blowing the context window.
 import { z } from 'zod';
-import { bar, cut, fmtDate, fmtMin, table } from '../format.js';
+import { bar, cut, fmtDate, fmtMin, fmtTime, table } from '../format.js';
 const projectArg = z
     .string()
     .describe('Nome ou id do projeto (lista). Aceita o nome como a pessoa fala: "Vendas", "the city".');
@@ -190,11 +190,12 @@ export const dayBrief = {
             `Tempo estimado do que está para hoje ou antes: ${fmtMin(d.estimatedMinutes)}`,
         ];
         if (d.tasks.length) {
-            parts.push('', table(['#', 'Tarefa', 'Projeto', 'Vence', 'Atraso', 'Estimado'], d.tasks.map((t) => [
+            parts.push('', table(['#', 'Tarefa', 'Projeto', 'Vence', 'Hora', 'Atraso', 'Estimado'], d.tasks.map((t) => [
                 `#${t.id}`,
                 cut(t.title, 40),
                 cut(t.categoryName, 18) || '—',
                 fmtDate(t.date),
+                fmtTime(t.time),
                 t.daysLate != null ? `${t.daysLate}d` : '',
                 fmtMin(t.durationMin),
             ])));

@@ -2,8 +2,9 @@
 // tools confirm what was recorded, so the agent can say "done, it's #412" rather than "I think
 // it saved".
 import { z } from 'zod';
-import { cut, fmtDate, fmtMin, table } from '../format.js';
+import { cut, fmtDate, fmtMin, fmtTime, table } from '../format.js';
 const vDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'use YYYY-MM-DD');
+const vTime = z.string().regex(/^\d{2}:\d{2}$/, 'use HH:MM (24h)');
 export const tasksSearch = {
     name: 'systemtask_tasks_search',
     title: 'Buscar tarefas',
@@ -59,6 +60,7 @@ export const tasksSearch = {
             `#${t.id}`,
             cut(t.title, 44),
             fmtDate(t.date),
+            fmtTime(t.time),
             t.assigneeUserId ? `@${names.get(t.assigneeUserId) ?? t.assigneeUserId}` : '',
             t.priority ?? '',
             fmtMin(t.durationMin),
@@ -66,7 +68,7 @@ export const tasksSearch = {
         ]);
         const header = projectName ? `**${projectName}** — ${r.tasks.length} tarefa(s)` : `${r.tasks.length} tarefa(s)`;
         const notice = r.tasks.length === limit ? `\n\n_(veio o máximo de ${limit}; refine os filtros para ver o resto)_` : '';
-        return `${header}\n\n${table(['#', 'Tarefa', 'Vence', 'Responsável', 'Prior.', 'Estimado', 'OK'], rows)}${notice}`;
+        return `${header}\n\n${table(['#', 'Tarefa', 'Vence', 'Hora', 'Responsável', 'Prior.', 'Estimado', 'OK'], rows)}${notice}`;
     },
 };
 export const taskCreate = {
@@ -79,6 +81,9 @@ export const taskCreate = {
         title: z.string().min(1).max(200).describe('O que é, em uma linha.'),
         project: z.string().optional().describe('Nome ou id do projeto. Sem isto, a tarefa fica solta.'),
         due: vDate.optional().describe('Quando vence, YYYY-MM-DD. Sem data, vira backlog.'),
+        time: vTime
+            .optional()
+            .describe('Hora do dia, HH:MM em 24h. Só faz sentido junto com "due" — sem data ela é ignorada na agenda.'),
         priority: z.enum(['low', 'med', 'high']).optional(),
         estimateMin: z.number().int().min(0).max(1440).optional().describe('Estimativa em minutos.'),
         description: z.string().max(2000).optional(),
@@ -88,6 +93,7 @@ export const taskCreate = {
         const body = {
             title: a.title,
             date: a.due ?? null,
+            time: a.time ?? null,
             priority: a.priority ?? null,
             durationMin: a.estimateMin ?? null,
             description: a.description ?? null,
@@ -99,19 +105,21 @@ export const taskCreate = {
             where = p.name;
         }
         const r = await api.post('/api/tasks', body);
-        return `Criada a tarefa **#${r.task.id}** — "${r.task.title}" (${where}${a.due ? `, vence ${fmtDate(a.due)}` : ', sem data'}).`;
+        const when = a.due ? `, vence ${fmtDate(a.due)}${a.time ? ` às ${a.time}` : ''}` : ', sem data';
+        return `Criada a tarefa **#${r.task.id}** — "${r.task.title}" (${where}${when}).`;
     },
 };
 export const taskUpdate = {
     name: 'systemtask_task_update',
     title: 'Concluir, adiar ou repriorizar uma tarefa',
-    description: 'Muda o que já existe: marcar concluída, mudar a data, a prioridade, a estimativa ou o título. ' +
-        'Só manda o que muda. Para APAGAR uma tarefa, não dá por aqui — é pelo app (o token de agente ' +
-        'não apaga nada, de propósito).',
+    description: 'Muda o que já existe: marcar concluída, mudar a data, a hora, a prioridade, a estimativa ou o ' +
+        'título. Só manda o que muda. Para APAGAR uma tarefa, não dá por aqui — é pelo app (o token de ' +
+        'agente não apaga nada, de propósito).',
     inputSchema: {
         task: z.number().int().min(1).describe('O id da tarefa (o número que aparece como #123).'),
         completed: z.boolean().optional().describe('true marca como feita; false reabre.'),
         due: vDate.optional().describe('Nova data, YYYY-MM-DD.'),
+        time: vTime.nullable().optional().describe('Nova hora, HH:MM em 24h. null tira a hora e deixa a tarefa só com data.'),
         title: z.string().min(1).max(200).optional(),
         priority: z.enum(['low', 'med', 'high']).optional(),
         estimateMin: z.number().int().min(0).max(1440).optional(),
@@ -124,6 +132,8 @@ export const taskUpdate = {
             body.completed = a.completed;
         if (a.due !== undefined)
             body.date = a.due;
+        if (a.time !== undefined)
+            body.time = a.time;
         if (a.title !== undefined)
             body.title = a.title;
         if (a.priority !== undefined)
@@ -137,7 +147,8 @@ export const taskUpdate = {
         const r = await api.patch(`/api/tasks/${a.task}`, body);
         const t = r.task;
         const changed = Object.keys(body).join(', ');
-        return `Tarefa **#${t.id}** atualizada (${changed}). Agora: "${cut(t.title, 60)}", ${t.completed ? 'concluída' : `aberta, vence ${fmtDate(t.date)}`}.`;
+        const state = t.completed ? 'concluída' : `aberta, vence ${fmtDate(t.date)}${t.time ? ` às ${t.time}` : ''}`;
+        return `Tarefa **#${t.id}** atualizada (${changed}). Agora: "${cut(t.title, 60)}", ${state}.`;
     },
 };
 export const taskAssign = {

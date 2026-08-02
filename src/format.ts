@@ -34,6 +34,11 @@ export function fmtDate(iso: string | null | undefined, currentYear = String(new
   return y !== currentYear ? `${d}/${m}/${y}` : `${d}/${m}`;
 }
 
+/** Empty, not '—', so `table` drops the column entirely when no row in the set has an hour. */
+export function fmtTime(time: string | null | undefined): string {
+  return time ?? '';
+}
+
 export function fmtMin(min: number | null | undefined): string {
   const n = min ?? 0;
   if (n <= 0) return '—';

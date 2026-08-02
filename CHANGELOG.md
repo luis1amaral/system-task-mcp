@@ -1,5 +1,18 @@
 # Changelog — system-task-mcp
 
+## 1.2.0
+
+- 🐛 **A hora da tarefa era escrita-cega.** A API sempre teve `time` (`HH:MM`, aceito no
+  `POST /api/tasks` e no `PATCH /api/tasks/:id`) e o `task_get` já imprimia "às HH:MM" — mas
+  `task_create`, `task_update` e `demand_create` nunca mandavam o campo, e nem o expunham no
+  schema. Resultado: pedir "Duolingo às 10h" ao agente só dava para virar gambiarra no título.
+  Agora os três aceitam `time`; no `task_update`, `time: null` tira a hora.
+- **A hora aparece nas listas.** Nova coluna "Hora" em `tasks_search` e no `day_brief` — sem isso
+  a hora podia ser gravada e nunca mais ser vista pelo agente. A coluna some sozinha quando
+  nenhuma tarefa do conjunto tem hora (regra antiga do `table`).
+- Verificado com `npm run check` (tsc + build + smoke, 61 checks) e com escrita real na conta:
+  criar com hora, mudar a hora, limpar com `null`, e reler pelo `task_get`.
+
 ## 1.1.1
 
 - 🐛 **`/tasks` virou `/system-task`.** `/tasks` já é um comando EMBUTIDO do Claude Code (lista o

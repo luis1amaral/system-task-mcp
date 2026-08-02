@@ -32,6 +32,10 @@ export function fmtDate(iso, currentYear = String(new Date().getFullYear())) {
         return iso;
     return y !== currentYear ? `${d}/${m}/${y}` : `${d}/${m}`;
 }
+/** Empty, not '—', so `table` drops the column entirely when no row in the set has an hour. */
+export function fmtTime(time) {
+    return time ?? '';
+}
 export function fmtMin(min) {
     const n = min ?? 0;
     if (n <= 0)
