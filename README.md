@@ -21,8 +21,8 @@ In Claude Code:
 /plugin install system-task
 ```
 
-Claude will ask for an **access token**. Generate one in the System Task app under
-**Settings → Agent access**, tap *Connect Claude Code*, and paste it. The token is stored in your
+On the second command Claude asks for one thing — your **access token**. Generate it in the
+System Task app under **Settings → Agent access**, tap *Connect Claude Code*, and paste it. The token is stored in your
 system keychain — never in a project file, never in your shell history.
 
 Don't have an account yet? Create one at **[system-task.defaltm.com](https://system-task.defaltm.com)**.
@@ -93,6 +93,12 @@ is finished.
 > "Show me what's overdue in the Vendas project"
 
 ---
+
+## Self-hosting
+
+Pointing the plugin at your own System Task API is an environment variable, not a plugin option:
+set `SYSTEM_TASK_API_URL`. It is deliberately not in the configure panel — the plugin should ask
+for one thing only.
 
 ## Development
 

@@ -1,7 +1,7 @@
 {
   "name": "system-task",
   "displayName": "System Task",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Run your projects and team from Claude: progress reports, workload per person, who has nothing assigned, and demands with a verifiable done-when.",
   "author": {
     "name": "System Task",
@@ -10,21 +10,21 @@
   "homepage": "https://system-task.defaltm.com",
   "repository": "https://github.com/luis1amaral/system-task-mcp",
   "license": "MIT",
-  "keywords": ["system-task", "tasks", "projects", "project-management", "team", "mcp"],
+  "keywords": [
+    "system-task",
+    "tasks",
+    "projects",
+    "project-management",
+    "team",
+    "mcp"
+  ],
   "userConfig": {
     "token": {
       "type": "string",
       "title": "Access token",
-      "description": "Generate it in the System Task app under Settings → Agent access. Starts with stk_.",
       "sensitive": true,
-      "required": true
-    },
-    "apiUrl": {
-      "type": "string",
-      "title": "API URL",
-      "description": "Leave as is unless you host your own System Task API.",
-      "default": "https://system-api.defaltm.com",
-      "required": false
+      "required": true,
+      "description": "Open the System Task app, go to Settings -> Agent access, tap \"Connect Claude Code\" and paste the code here. It starts with stk_."
     }
   }
 }

@@ -1,5 +1,13 @@
 # Changelog — system-task-mcp
 
+## 1.0.1
+
+- **The configure panel now asks for ONE thing: the token.** `apiUrl` was a user option with a
+  working default, so on a fresh install the panel showed only *that* field and the plugin looked
+  like it wanted something other than the code. Self-hosters set `SYSTEM_TASK_API_URL` as a plain
+  environment variable instead.
+- The token field now says where to get it, in the field's own description.
+
 ## 1.0.0
 
 - First release. Stdio MCP server with 14 tools: 8 read (day brief, projects, project report,
