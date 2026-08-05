@@ -69,6 +69,7 @@ The plugin ships two slash commands:
 | `systemtask_tasks_search` | Search by project, assignee, status, period |
 | `systemtask_task_get` | One task in full — the escape hatch when a title is truncated |
 | `systemtask_whoami` | Which account the token opens |
+| `systemtask_list_trash` | What is in the lists trash, ready to restore or purge |
 
 **Write**
 
@@ -80,6 +81,11 @@ The plugin ships two slash commands:
 | `systemtask_task_assign` | Set or clear the assignee (one, or nobody) |
 | `systemtask_task_move` | Move between projects (a recurring task moves its whole series) |
 | `systemtask_task_comment` | Comment on a task (an `@user` notifies that person) |
+| `systemtask_list_create` | Creates a list (the app's "project") |
+| `systemtask_list_rename` | Renames a list, and/or changes its color/icon |
+| `systemtask_list_delete` | Sends a list to the trash — reversible, tasks go with it |
+| `systemtask_list_restore` | Restores a list from the trash, tasks included |
+| `systemtask_list_purge` | Deletes a list **for good** — only when the user explicitly asks for that |
 
 ---
 

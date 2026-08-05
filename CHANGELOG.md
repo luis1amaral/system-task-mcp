@@ -1,5 +1,26 @@
 # Changelog — system-task-mcp
 
+## 1.3.0
+
+- ✨ **6 tools novas de lista** (`src/tools/lists.ts`, migration 035 no system-api): `list_create`,
+  `list_rename` (também recolore — reusa o mesmo `PATCH`), `list_delete` (manda para a lixeira,
+  reversível), `list_trash` (o que está lá), `list_restore` e `list_purge`. Antes o MCP não
+  conseguia criar lista nem mudar o nome de uma — só as 8 tools mais antigas de tarefa existiam.
+- As tools novas falam **"lista"** (`list_*`); as 8 antigas continuam chamando a mesma entidade de
+  "projeto". Inconsistência de nome ACEITA de propósito — bate com o rótulo que o app mostra
+  ("Listas"), e renomear as antigas está fora do escopo desta mudança.
+- **`list_purge` é a única tool irreversível do plugin.** O schema exige `confirmRequest` (o pedido
+  da pessoa, nas palavras dela) — não é um argumento opcional, é obrigatório, e a `description` diz
+  explicitamente que a tool só serve para quando alguém pede a remoção definitiva. O smoke testa que
+  o campo é `required`, não só que existe.
+- `SystemTaskClient` ganhou `resolveProjectAnyState`: como `resolveProject`, mas cai para a lixeira
+  quando a lista não está entre as ativas — é o que deixa restaurar/purgar pelo NOME, já que a lista
+  some de `GET /api/categories` assim que é apagada. Toda escrita de lista invalida o cache de
+  categorias (senão criar uma lista e se referir a ela pelo nome na sequência falhava até o processo
+  reiniciar).
+- Allow-list liberada na API só para as rotas que isto precisa (ver CHANGELOG do system-api).
+- **Verificado:** `npm run check` (tsc + build + smoke) — 86 checks, contador de tools 15 → 21.
+
 ## 1.2.0
 
 - ✨ **`task_create` aceita `assignee`.** Antes a tool era "cria uma tarefa SUA, sem responsável" e

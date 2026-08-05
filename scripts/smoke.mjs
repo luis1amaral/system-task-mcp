@@ -90,7 +90,7 @@ notify('notifications/initialized');
 
 const listed = await call('tools/list', {});
 const tools = listed.result?.tools ?? [];
-ok(tools.length === 15, `lists 15 tools (got ${tools.length})`);
+ok(tools.length === 21, `lists 21 tools (got ${tools.length})`);
 
 for (const t of tools) {
   ok(t.name.startsWith('systemtask_'), `${t.name}: product prefix`);
@@ -106,6 +106,13 @@ for (const required of [
   'systemtask_demand_create',
   // The escape hatch for the truncated titles in every table.
   'systemtask_task_get',
+  // Lists (migration 035): create/rename/delete(trash)/trash(list)/restore/purge.
+  'systemtask_list_create',
+  'systemtask_list_rename',
+  'systemtask_list_delete',
+  'systemtask_list_trash',
+  'systemtask_list_restore',
+  'systemtask_list_purge',
 ]) {
   ok(names.includes(required), `has ${required}`);
 }
@@ -116,6 +123,11 @@ const demand = tools.find((t) => t.name === 'systemtask_demand_create');
 for (const field of ['project', 'objective', 'deliverable', 'doneWhen']) {
   ok((demand.inputSchema.required ?? []).includes(field), `demand requires "${field}"`);
 }
+
+// The one irreversible tool in the whole set: the schema, not prose, is what forces the caller to
+// carry the person's own words before the server ever sees the request.
+const purge = tools.find((t) => t.name === 'systemtask_list_purge');
+ok((purge.inputSchema.required ?? []).includes('confirmRequest'), 'list_purge requires "confirmRequest"');
 
 if (!token) {
   const r = await call('tools/call', { name: 'systemtask_whoami', arguments: {} });

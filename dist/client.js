@@ -66,22 +66,71 @@ export class SystemTaskClient {
         const all = await this.categories();
         if (all.length === 0)
             throw new ApiError(404, 'você ainda não tem nenhum projeto no System Task');
-        const asId = typeof ref === 'number' ? ref : /^\d+$/.test(ref.trim()) ? Number(ref) : null;
-        if (asId != null) {
-            const found = all.find((c) => c.id === asId);
-            if (found)
-                return found;
-            throw new ApiError(404, `projeto ${asId} não existe ou você não participa dele`);
+        return matchByRef(all, ref, {
+            byId: (id) => `projeto ${id} não existe ou você não participa dele`,
+            notFound: (r) => `não achei o projeto "${r}". Os seus são: ${all.map((c) => c.name).join(', ')}`,
+            ambiguous: (r, cs) => `"${r}" combina com mais de um projeto: ${cs}. Diga qual.`,
+        });
+    }
+    // ── listas (migration 035): criar, renomear, lixeira, restaurar, purgar ──────────────────────
+    //
+    // Toda escrita aqui invalida `categoriesCache`: sem isto, criar uma lista e em seguida se referir
+    // a ela pelo NOME (o caminho normal numa conversa) falharia até o processo reiniciar, porque
+    // `resolveProject` reusaria a lista antiga.
+    invalidateCategories() {
+        this.categoriesCache = null;
+    }
+    async createCategory(body) {
+        const r = await this.post('/api/categories', body);
+        this.invalidateCategories();
+        return r.category;
+    }
+    async renameCategory(id, body) {
+        const r = await this.patch(`/api/categories/${id}`, body);
+        this.invalidateCategories();
+        return r.category;
+    }
+    /** Manda para a lixeira — não apaga a linha; ver `services/api-tokens.ts` no system-api. */
+    async trashCategory(id) {
+        await this.request('DELETE', `/api/categories/${id}`);
+        this.invalidateCategories();
+    }
+    async trash() {
+        const r = await this.get('/api/categories/trash');
+        return r.categories ?? [];
+    }
+    async restoreCategory(id) {
+        const r = await this.post(`/api/categories/${id}/restore`, {});
+        this.invalidateCategories();
+        return r.category;
+    }
+    /** `confirm: true` é exigido pelo servidor de propósito — não dá para chamar isto sem querer. */
+    async purgeCategory(id) {
+        await this.request('DELETE', `/api/categories/${id}/purge`, { confirm: true });
+        this.invalidateCategories();
+    }
+    /**
+     * Como `resolveProject`, mas procura TAMBÉM na lixeira quando não acha entre as ativas — é o que
+     * permite restaurar ou purgar uma lista pelo nome, já que ela some de `/api/categories` assim que
+     * é apagada.
+     */
+    async resolveProjectAnyState(ref) {
+        try {
+            return await this.resolveProject(ref);
         }
-        const target = String(ref).trim().toLowerCase();
-        const exact = all.filter((c) => c.name.toLowerCase() === target);
-        const candidates = exact.length > 0 ? exact : all.filter((c) => c.name.toLowerCase().includes(target));
-        if (candidates.length === 1)
-            return candidates[0];
-        if (candidates.length === 0) {
-            throw new ApiError(404, `não achei o projeto "${ref}". Os seus são: ${all.map((c) => c.name).join(', ')}`);
+        catch (e) {
+            if (!(e instanceof ApiError) || e.status !== 404)
+                throw e;
         }
-        throw new ApiError(409, `"${ref}" combina com mais de um projeto: ${candidates.map((c) => `${c.name} (#${c.id})`).join(', ')}. Diga qual.`);
+        const trashed = await this.trash();
+        if (trashed.length === 0) {
+            throw new ApiError(404, `não achei "${ref}" — nem ativa, nem na lixeira (que está vazia)`);
+        }
+        return matchByRef(trashed, ref, {
+            byId: (id) => `a lista ${id} não existe (nem ativa, nem na lixeira)`,
+            notFound: (r) => `não achei "${r}" — nem ativa, nem na lixeira. Na lixeira: ${trashed.map((c) => c.name).join(', ')}`,
+            ambiguous: (r, cs) => `"${r}" combina com mais de uma lista na lixeira: ${cs}. Diga qual.`,
+        });
     }
     async members(categoryId) {
         const cache = this.membersCache.get(categoryId);
@@ -113,6 +162,27 @@ export class SystemTaskClient {
         throw new ApiError(409, `"${ref}" combina com: ${partial.map((m) => m.username).join(', ')}. Diga qual.`);
     }
 }
+/**
+ * Name-or-id lookup shared by `resolveProject` and `resolveProjectAnyState` — same three outcomes
+ * (exact id, one name match, or a question back) either way; only the messages differ per caller.
+ */
+function matchByRef(all, ref, msg) {
+    const asId = typeof ref === 'number' ? ref : /^\d+$/.test(String(ref).trim()) ? Number(ref) : null;
+    if (asId != null) {
+        const found = all.find((c) => c.id === asId);
+        if (found)
+            return found;
+        throw new ApiError(404, msg.byId(asId));
+    }
+    const target = String(ref).trim().toLowerCase();
+    const exact = all.filter((c) => c.name.toLowerCase() === target);
+    const candidates = exact.length > 0 ? exact : all.filter((c) => c.name.toLowerCase().includes(target));
+    if (candidates.length === 1)
+        return candidates[0];
+    if (candidates.length === 0)
+        throw new ApiError(404, msg.notFound(ref));
+    throw new ApiError(409, msg.ambiguous(ref, candidates.map((c) => `${c.name} (#${c.id})`).join(', ')));
+}
 function safeJson(text) {
     try {
         return JSON.parse(text);
@@ -131,7 +201,7 @@ function messageFor(status, data) {
         return 'o token de acesso é inválido, foi revogado ou expirou — gere outro no app, em Configurações → Acesso de agentes';
     }
     if (status === 403) {
-        return 'o token de agente não tem permissão para isto (ele só lê relatórios e cria/edita tarefas — apagar e mexer na conta é pelo app)';
+        return 'o token de agente não tem permissão para isto (ele lê relatórios, cria/edita tarefas e cria/edita/apaga listas — apagar tarefa e mexer na conta é pelo app)';
     }
     if (status === 404)
         return fromApi || 'não encontrado (ou você não participa desta all)';
